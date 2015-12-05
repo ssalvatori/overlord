@@ -8,6 +8,7 @@ import (
 
 	"github.com/ch3lo/overlord/scheduler"
 	"github.com/ch3lo/overlord/scheduler/factory"
+	"github.com/ch3lo/overlord/util"
 	"github.com/fsouza/go-dockerclient"
 )
 
@@ -56,17 +57,17 @@ func NewFromParameters(parameters map[string]interface{}) (*SwarmScheduler, erro
 	var tlskey interface{}
 
 	if tlsverify {
-		tlscacert, ok := parameters["tlscacert"]
+		tlscacert, ok = parameters["tlscacert"]
 		if !ok || fmt.Sprint(tlscacert) == "" {
 			return nil, errors.New("Parametro tlscacert no existe")
 		}
 
-		tlscert, ok := parameters["tlscert"]
+		tlscert, ok = parameters["tlscert"]
 		if !ok || fmt.Sprint(tlscert) == "" {
 			return nil, errors.New("Parametro tlscert no existe")
 		}
 
-		tlskey, ok := parameters["tlskey"]
+		tlskey, ok = parameters["tlskey"]
 		if !ok || fmt.Sprint(tlskey) == "" {
 			return nil, errors.New("Parametro tlskey no existe")
 		}
@@ -88,7 +89,7 @@ func New(params SwarmParameters) (*SwarmScheduler, error) {
 
 	swarm := new(SwarmScheduler)
 	var err error
-
+	util.Log.Debugf("Configuring Swarm with %+v", params)
 	if params.tlsverify {
 		swarm.client, err = docker.NewTLSClient(params.address, params.tlscert, params.tlskey, params.tlscacert)
 	} else {

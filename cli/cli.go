@@ -17,6 +17,7 @@ import (
 )
 
 var logFile *os.File = nil
+var overlord *manager.Overlord
 
 func globalFlags() []cli.Flag {
 	flags := []cli.Flag{
@@ -148,12 +149,10 @@ func setupApplication(c *cli.Context) error {
 	}
 
 	manager.NewApp(appConfig)
-
 	return nil
 }
 
 func RunApp() {
-
 	app := cli.NewApp()
 	app.Name = "overlord"
 	app.Usage = "Monitor de contenedores"
