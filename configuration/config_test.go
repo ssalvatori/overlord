@@ -37,6 +37,7 @@ var configStruct = Configuration{
 			},
 		},
 		"sjc": Cluster{
+			Disbled: true,
 			Scheduler: Scheduler{
 				"marathon": Parameters{
 					"address":   "3.3.3.3:8081",
@@ -81,6 +82,7 @@ cluster:
         tlscert: cert-swarm.pem
         tlskey: key-swarm.pem
   sjc:
+    disabled: true
     scheduler:
       marathon:
         address: 3.3.3.3:8081

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ch3lo/overlord/scheduler"
 	"github.com/ch3lo/overlord/scheduler/factory"
+	"github.com/ch3lo/overlord/service"
 	"github.com/ch3lo/overlord/util"
 	"github.com/fsouza/go-dockerclient"
 )
@@ -114,4 +115,22 @@ func (ss *SwarmScheduler) IsAlive(id string) (bool, error) {
 		return false, err
 	}
 	return container.State.Running && !container.State.Paused, nil
+}
+
+func (ss *SwarmScheduler) GetInstances(filter scheduler.FilterInstances) ([]*service.ServiceInstance, error) {
+	// TODO implementar el uso del filtro
+	containers, err := ss.client.ListContainers(docker.ListContainersOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	var instances []*service.ServiceInstance
+	for _, v := range containers {
+		instances = append(instances, &service.ServiceInstance{
+			Id:     v.ID,
+			Status: v.Status,
+		})
+	}
+
+	return instances, nil
 }

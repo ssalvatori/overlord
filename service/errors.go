@@ -1,4 +1,4 @@
-package types
+package service
 
 import "fmt"
 
@@ -13,10 +13,10 @@ func (err ServiceAlreadyExist) Error() string {
 
 // ServiceVersionAlreadyExist sucede cuando se esta agregando una version de servicio que ya existe
 type ServiceVersionAlreadyExist struct {
-	service string
-	version string
+	Service string
+	Version string
 }
 
 func (err ServiceVersionAlreadyExist) Error() string {
-	return fmt.Sprintf("La version % del servicio %s ya existe", err.version, err.service)
+	return fmt.Sprintf("La version % del servicio %s ya existe", err.Version, err.Service)
 }

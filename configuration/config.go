@@ -24,6 +24,7 @@ type Notifications struct {
 }
 
 type Cluster struct {
+	Disabled  bool      `yaml:"disabled"`
 	Scheduler Scheduler `yaml:"scheduler"`
 }
 
