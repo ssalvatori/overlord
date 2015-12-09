@@ -1,11 +1,6 @@
 package updater
 
-import (
-	"time"
-
-	"github.com/ch3lo/overlord/scheduler"
-	"github.com/ch3lo/overlord/service"
-)
+import "github.com/ch3lo/overlord/scheduler"
 
 type ChangeCriteria int
 
@@ -21,37 +16,31 @@ func (cc ChangeCriteria) String() string {
 	return chageCriteria[cc-1]
 }
 
-type serviceUpdate struct {
-	scheduler  scheduler.Scheduler
-	service    *service.ServiceVersion
-	lastUpdate time.Time
-}
-
-func (u *serviceUpdate) sync() {
-	u.scheduler.IsAlive("asd")
-}
-
 const changeManagerId string = "ChangeManager"
 
 type ChangeManager struct {
-	subscribers []Subscriber
+	Subject
+	services map[string]*scheduler.ServiceInformation
 }
 
-func (cm *ChangeManager) id() string {
+func NewChangeManager() *ChangeManager {
+	cm := &ChangeManager{
+		Subject: Subject{
+			subscribers: make(map[string]Subscriber),
+		},
+		services: make(map[string]*scheduler.ServiceInformation),
+	}
+	return cm
+}
+
+func (cm *ChangeManager) Id() string {
 	return changeManagerId
 }
 
-func (cm *ChangeManager) Attach(s Subscriber, criteria ChangeCriteria) {
-	// TODO manejar subscribers ya existentes
-	cm.subscribers = append(cm.subscribers, s)
+func (cm *ChangeManager) Update() {
+	cm.Notify()
 }
 
-func (cm *ChangeManager) Detach(s Subscriber) {
-
-}
-
-func (cm *ChangeManager) update() {
-	for k, _ := range cm.subscribers {
-		cm.subscribers[k].update()
-	}
+func (s *Subject) SubscribeWithCriteria(sub Subscriber, cc ChangeCriteria) {
+	s.Subscribe(sub)
 }

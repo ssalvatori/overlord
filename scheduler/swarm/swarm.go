@@ -8,15 +8,14 @@ import (
 
 	"github.com/ch3lo/overlord/scheduler"
 	"github.com/ch3lo/overlord/scheduler/factory"
-	"github.com/ch3lo/overlord/service"
 	"github.com/ch3lo/overlord/util"
 	"github.com/fsouza/go-dockerclient"
 )
 
-const schedulerName = "swarm"
+const schedulerId = "swarm"
 
 func init() {
-	factory.Register(schedulerName, &swarmCreator{})
+	factory.Register(schedulerId, &swarmCreator{})
 }
 
 // swarmCreator implementa la interfaz factory.SchedulerFactory
@@ -107,6 +106,11 @@ func New(params SwarmParameters) (*SwarmScheduler, error) {
 // Permite el la comunicación con la API de Swarm
 type SwarmScheduler struct {
 	client *docker.Client
+	tmp    string
+}
+
+func (ss *SwarmScheduler) Id() string {
+	return schedulerId
 }
 
 func (ss *SwarmScheduler) IsAlive(id string) (bool, error) {
@@ -117,16 +121,16 @@ func (ss *SwarmScheduler) IsAlive(id string) (bool, error) {
 	return container.State.Running && !container.State.Paused, nil
 }
 
-func (ss *SwarmScheduler) GetInstances(filter scheduler.FilterInstances) ([]*service.ServiceInstance, error) {
+func (ss *SwarmScheduler) GetInstances(filter scheduler.FilterInstances) ([]*scheduler.ServiceInformation, error) {
 	// TODO implementar el uso del filtro
 	containers, err := ss.client.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	var instances []*service.ServiceInstance
+	var instances []*scheduler.ServiceInformation
 	for _, v := range containers {
-		instances = append(instances, &service.ServiceInstance{
+		instances = append(instances, &scheduler.ServiceInformation{
 			Id:     v.ID,
 			Status: v.Status,
 		})

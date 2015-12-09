@@ -4,32 +4,12 @@ import (
 	"github.com/ch3lo/overlord/configuration"
 	"github.com/ch3lo/overlord/scheduler"
 	"github.com/ch3lo/overlord/scheduler/factory"
-	"github.com/ch3lo/overlord/service"
 	"github.com/ch3lo/overlord/util"
 )
 
 type Cluster struct {
-	name             string
-	scheduler        scheduler.Scheduler
-	serviceContainer map[string]*service.ServiceContainer
-}
-
-// RegisterService registra un nuevo servicio en un contenedor de servicios
-// Si el contenedor ya existia se omite su creación y se procede a registrar
-// las versiones de los servicios.
-// Si no se puede registrar una nueva version se retornara un error.
-func (c *Cluster) RegisterService(params *service.ServiceParameters) (*service.ServiceContainer, error) {
-	container := service.NewServiceContainer(params.Id)
-
-	for key, _ := range c.serviceContainer {
-		if key == params.Id {
-			container = c.serviceContainer[key]
-		}
-	}
-
-	c.serviceContainer[params.Id] = container
-
-	return container, container.RegisterServiceVersion(params)
+	name      string
+	scheduler scheduler.Scheduler
 }
 
 // NewCluster crea un nuevo cluster a partir de un id y parametros de configuracion
@@ -45,9 +25,8 @@ func NewCluster(name string, config configuration.Cluster) (*Cluster, error) {
 	}
 
 	c := &Cluster{
-		name:             name,
-		serviceContainer: make(map[string]*service.ServiceContainer),
-		scheduler:        clusterScheduler,
+		name:      name,
+		scheduler: clusterScheduler,
 	}
 
 	return c, nil

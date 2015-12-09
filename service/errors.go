@@ -18,5 +18,5 @@ type ServiceVersionAlreadyExist struct {
 }
 
 func (err ServiceVersionAlreadyExist) Error() string {
-	return fmt.Sprintf("La version % del servicio %s ya existe", err.Version, err.Service)
+	return fmt.Sprintf("La version %s del servicio %s ya existe", err.Version, err.Service)
 }

@@ -1,17 +1,25 @@
 package types
 
+import (
+	"time"
+)
+
 type Instance struct {
 	Id      string `json:"id"`
 	Address string `json:"address"`
 }
 
 type ServiceVersion struct {
-	Version   string              `json:"version,omitempty"`
-	Status    string              `json:"status"`
-	Instances map[string]Instance `json:"instances,omitempty"`
+	Version      string     `json:"version,omitempty"`
+	CreationDate *time.Time `json:"creation_time,omitempty"`
+	ImageName    string     `json:"image_name,omitempty"`
+	ImageTag     string     `json:"image_tag,omitempty"`
+	Status       string     `json:"status,omitempty"`
+	Instances    []Instance `json:"instances,omitempty"`
 }
 
 type Service struct {
-	Id       string                    `json:"id,omitempty"`
-	Versions map[string]ServiceVersion `json:"versions,omitempty"`
+	Id           string           `json:"id"`
+	CreationDate *time.Time       `json:"creation_time,omitempty"`
+	Versions     []ServiceVersion `json:"versions,omitempty"`
 }

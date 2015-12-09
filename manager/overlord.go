@@ -5,7 +5,6 @@ import (
 
 	"github.com/ch3lo/overlord/configuration"
 	"github.com/ch3lo/overlord/manager/cluster"
-	"github.com/ch3lo/overlord/scheduler"
 	"github.com/ch3lo/overlord/service"
 	"github.com/ch3lo/overlord/updater"
 	"github.com/ch3lo/overlord/util"
@@ -17,18 +16,22 @@ import (
 var overlordApp *Overlord
 
 type Overlord struct {
-	config         *configuration.Configuration
-	serviceMux     sync.Mutex
-	clusters       map[string]*cluster.Cluster
-	serviceUpdater *updater.ServiceUpdater
+	config           *configuration.Configuration
+	serviceMux       sync.Mutex
+	clusters         map[string]*cluster.Cluster
+	serviceUpdater   *updater.ServiceUpdater
+	changeManager    *updater.ChangeManager
+	serviceContainer map[string]*service.ServiceContainer
 }
 
 func NewApp(config *configuration.Configuration) {
 	app := &Overlord{
-		config: config,
+		config:           config,
+		serviceContainer: make(map[string]*service.ServiceContainer),
 	}
 
 	app.setupClusters(config)
+	app.changeManager = updater.NewChangeManager()
 	app.setupUpdater()
 
 	overlordApp = app
@@ -58,29 +61,39 @@ func (o *Overlord) setupClusters(config *configuration.Configuration) {
 }
 
 func (o *Overlord) setupUpdater() {
-	var schedulers []scheduler.Scheduler
-	for k, _ := range o.clusters {
-		schedulers = append(schedulers, o.clusters[k].GetScheduler())
-	}
-
-	su := updater.NewServiceUpdater(schedulers)
-	cm := &updater.ChangeManager{}
-	su.Attach(cm)
-
+	su := updater.NewServiceUpdater(o.clusters)
+	su.Subscribe(o.changeManager)
 	su.Monitor()
-
 	o.serviceUpdater = su
 }
 
-func (o *Overlord) RegisterService(clusterKey string, srv *service.ServiceParameters) (*service.ServiceContainer, error) {
+// RegisterService registra un nuevo servicio en un contenedor de servicios
+// Si el contenedor ya existia se omite su creación y se procede a registrar
+// las versiones de los servicios.
+// Si no se puede registrar una nueva version se retornara un error.
+func (o *Overlord) RegisterService(params service.ServiceParameters) (*service.ServiceVersion, error) {
 	o.serviceMux.Lock()
 	defer o.serviceMux.Unlock()
 
-	for key, _ := range o.clusters {
-		if key == clusterKey {
-			return o.clusters[key].RegisterService(srv)
+	container := service.NewServiceContainer(params.Id)
+
+	for key, _ := range o.serviceContainer {
+		if key == params.Id {
+			container = o.serviceContainer[key]
 		}
 	}
 
-	return nil, &cluster.ClusterDoesntExits{Name: clusterKey}
+	o.serviceContainer[params.Id] = container
+
+	sv, err := container.RegisterServiceVersion(params)
+	if err != nil {
+		return nil, err
+	}
+
+	o.changeManager.SubscribeWithCriteria(sv, updater.ALWAYS)
+	return sv, nil
+}
+
+func (o *Overlord) GetServices() map[string]*service.ServiceContainer {
+	return o.serviceContainer
 }

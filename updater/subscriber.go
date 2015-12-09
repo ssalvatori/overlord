@@ -1,6 +1,6 @@
 package updater
 
 type Subscriber interface {
-	id() string
-	update()
+	Id() string
+	Update()
 }

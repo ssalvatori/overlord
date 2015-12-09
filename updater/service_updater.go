@@ -2,60 +2,33 @@ package updater
 
 import (
 	"reflect"
-	"sync"
 	"time"
 
+	"github.com/ch3lo/overlord/manager/cluster"
 	"github.com/ch3lo/overlord/scheduler"
-	"github.com/ch3lo/overlord/service"
 	"github.com/ch3lo/overlord/util"
 )
 
 type ServiceUpdater struct {
-	subscriberMux     sync.Mutex
-	clusterSchedulers []scheduler.Scheduler
-	subscribers       map[string]Subscriber
-	services          map[string]*service.ServiceInstance
+	Subject
+	clusters map[string]*cluster.Cluster
+	services map[string]*scheduler.ServiceInformation
 }
 
-func NewServiceUpdater(schedulers []scheduler.Scheduler) *ServiceUpdater {
-	if schedulers == nil {
-		util.Log.Fatalln("Al menos se debe monitorear un scheduler")
+func NewServiceUpdater(clusters map[string]*cluster.Cluster) *ServiceUpdater {
+	if clusters == nil || len(clusters) == 0 {
+		util.Log.Fatalln("Al menos se debe monitorear un cluster")
 	}
 
 	s := &ServiceUpdater{
-		subscribers: make(map[string]Subscriber),
-		services:    make(map[string]*service.ServiceInstance),
+		Subject: Subject{
+			subscribers: make(map[string]Subscriber),
+		},
+		services: make(map[string]*scheduler.ServiceInformation),
 	}
-	s.clusterSchedulers = schedulers
+	s.clusters = clusters
 
 	return s
-}
-
-func (su *ServiceUpdater) Attach(s Subscriber) {
-	su.subscriberMux.Lock()
-	defer su.subscriberMux.Unlock()
-
-	for subscriberId, _ := range su.subscribers {
-		if subscriberId == s.id() {
-			return
-		}
-	}
-
-	su.subscribers[s.id()] = s
-	util.Log.Infof("Se agregó el subscriptor: %s", s.id())
-}
-
-func (su *ServiceUpdater) Detach(s Subscriber) {
-	su.subscriberMux.Lock()
-	defer su.subscriberMux.Unlock()
-
-	for k, v := range su.subscribers {
-		if v.id() == s.id() {
-			delete(su.subscribers, k)
-			util.Log.Infof("Se removio el subscriptor: %s", s.id())
-			return
-		}
-	}
 }
 
 // Monitor comienza el monitoreo de los servicios de manera desatachada
@@ -68,20 +41,24 @@ func (su *ServiceUpdater) detachedMonitor() {
 	for {
 		mustNotify := false
 
-		for _, sched := range su.clusterSchedulers {
-			srvs, _ := sched.GetInstances(scheduler.FilterInstances{})
-			su.attachServices(sched, srvs)
+		for clusterKey, c := range su.clusters {
+			srvs, err := c.GetScheduler().GetInstances(scheduler.FilterInstances{})
+			if err != nil {
+				util.Log.Errorln("No se pudieron obtener instancias del cluster %s con scheduler %. Motivo: %s", clusterKey, c.GetScheduler().Id(), err.Error())
+				continue
+			}
+			mustNotify = su.attachServices(srvs)
 		}
 
 		if mustNotify {
-			su.notify()
+			su.Notify()
 		}
 
 		time.Sleep(time.Second * 10)
 	}
 }
 
-func (su *ServiceUpdater) attachServices(sched scheduler.Scheduler, services []*service.ServiceInstance) bool {
+func (su *ServiceUpdater) attachServices(services []*scheduler.ServiceInformation) bool {
 	updated := false
 
 	for k, v := range services {
@@ -101,13 +78,4 @@ func (su *ServiceUpdater) attachServices(sched scheduler.Scheduler, services []*
 	}
 
 	return updated
-}
-
-func (su *ServiceUpdater) notify() {
-	su.subscriberMux.Lock()
-	defer su.subscriberMux.Unlock()
-
-	for k, _ := range su.subscribers {
-		su.subscribers[k].update()
-	}
 }

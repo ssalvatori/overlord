@@ -4,31 +4,42 @@ import (
 	"net/http"
 
 	"github.com/ch3lo/overlord/api/types"
+	"github.com/ch3lo/overlord/manager"
+	"github.com/ch3lo/overlord/service"
 	"github.com/ch3lo/overlord/util"
 	"github.com/gin-gonic/gin"
 )
 
 func GetServices(c *gin.Context) {
-	/*	bag := manager.ServicesBag()
+	servicesList := manager.GetAppInstance().GetServices()
 
-		var services map[string]types.Service = make(map[string]types.Service, 0)
-		for _, srv := range bag {
-			var versions map[string]types.ServiceVersion = make(map[string]types.ServiceVersion, 0)
-			for _, v := range srv.Versions {
-				versions[v.Version] = types.ServiceVersion{}
-			}
-			services[srv.Id] = types.Service{Versions: versions}
+	var apiServices []types.Service
+	for _, srv := range servicesList {
+		var apiVersions []types.ServiceVersion
+		for _, v := range srv.Container {
+			apiVersions = append(apiVersions, types.ServiceVersion{
+				Version:      v.Version,
+				CreationDate: &srv.CreationDate,
+				ImageName:    v.ImageName,
+				ImageTag:     v.ImageTag,
+			})
 		}
+		apiServices = append(apiServices, types.Service{
+			Id:           srv.Id,
+			CreationDate: &srv.CreationDate,
+			Versions:     apiVersions,
+		})
+	}
 
-		c.JSON(http.StatusOK, gin.H{
-			"status":   http.StatusOK,
-			"services": services})*/
+	c.JSON(http.StatusOK, gin.H{
+		"status":   http.StatusOK,
+		"services": apiServices})
 }
 
 func PutService(c *gin.Context) {
-	var service types.Service
+	var bindedService types.Service
 
-	if err := c.BindJSON(&service); err != nil {
+	if err := c.BindJSON(&bindedService); err != nil {
 		util.Log.Println(err)
 		se := &SerializationError{Message: err.Error()}
 		c.JSON(http.StatusOK, gin.H{
@@ -36,27 +47,35 @@ func PutService(c *gin.Context) {
 			"message": se.GetMessage()})
 		return
 	}
-	/*
-		srv := &manager.Service{Id: service.Id}
 
-		if err := manager.RegisterService(srv); err != nil {
+	for _, v := range bindedService.Versions {
+		params := service.ServiceParameters{
+			Id:        bindedService.Id,
+			Version:   v.Version,
+			ImageName: v.ImageName,
+			ImageTag:  v.ImageTag,
+		}
+
+		if _, err := manager.GetAppInstance().RegisterService(params); err != nil {
 			util.Log.Println(err)
-			if ce, ok := err.(*util.ElementAlreadyExists); ok {
-				c.JSON(http.StatusOK, gin.H{
-					"status":  ce.GetStatus(),
-					"message": ce.GetMessage()})
+
+			var newErr CustomStatusAndMessageError
+			if _, ok := err.(*service.ServiceVersionAlreadyExist); ok {
+				newErr = &ElementAlreadyExists{}
 			} else {
-				ue := &UnknownError{}
-				c.JSON(http.StatusOK, gin.H{
-					"status":  ue.GetStatus(),
-					"message": ue.GetMessage()})
+				newErr = &UnknownError{}
 			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"status":  newErr.GetStatus(),
+				"message": newErr.GetMessage()})
 			return
 		}
-	*/
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
-		"service": service})
+		"service": bindedService})
 }
 
 func GetServiceByServiceId(c *gin.Context) {
