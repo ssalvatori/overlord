@@ -20,7 +20,6 @@ type Overlord struct {
 	serviceMux       sync.Mutex
 	clusters         map[string]*cluster.Cluster
 	serviceUpdater   *updater.ServiceUpdater
-	changeManager    *updater.ChangeManager
 	serviceContainer map[string]*service.ServiceContainer
 }
 
@@ -31,7 +30,6 @@ func NewApp(config *configuration.Configuration) {
 	}
 
 	app.setupClusters(config)
-	app.changeManager = updater.NewChangeManager()
 	app.setupUpdater()
 
 	overlordApp = app
@@ -62,7 +60,6 @@ func (o *Overlord) setupClusters(config *configuration.Configuration) {
 
 func (o *Overlord) setupUpdater() {
 	su := updater.NewServiceUpdater(o.clusters)
-	su.Subscribe(o.changeManager)
 	su.Monitor()
 	o.serviceUpdater = su
 }
@@ -90,7 +87,9 @@ func (o *Overlord) RegisterService(params service.ServiceParameters) (*service.S
 		return nil, err
 	}
 
-	o.changeManager.SubscribeWithCriteria(sv, updater.ALWAYS)
+	criteria := &updater.ImageNameCriteria{sv.ImageName + ":" + sv.ImageTag}
+
+	o.serviceUpdater.Register(sv, criteria)
 	return sv, nil
 }
 

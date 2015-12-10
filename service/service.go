@@ -3,6 +3,7 @@ package service
 import (
 	"time"
 
+	"github.com/ch3lo/overlord/updater"
 	"github.com/ch3lo/overlord/util"
 )
 
@@ -40,7 +41,7 @@ func (s *ServiceVersion) Id() string {
 	return s.Version + ":" + s.ImageName + ":" + s.ImageTag
 }
 
-func (s *ServiceVersion) Update() {
+func (s *ServiceVersion) Update(data map[string]updater.ServiceUpdaterData) {
 	util.Log.Println("Servicio actualizado", s.Id())
 }
 

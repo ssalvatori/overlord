@@ -5,7 +5,7 @@ package scheduler
 type Scheduler interface {
 	Id() string
 	IsAlive(id string) (bool, error)
-	GetInstances(filter FilterInstances) ([]*ServiceInformation, error)
+	GetInstances(filter FilterInstances) ([]ServiceInformation, error)
 }
 
 // FilterInstances es una estrutura para encapsular los requerimientos

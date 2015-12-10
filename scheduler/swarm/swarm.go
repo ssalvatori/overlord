@@ -121,18 +121,19 @@ func (ss *SwarmScheduler) IsAlive(id string) (bool, error) {
 	return container.State.Running && !container.State.Paused, nil
 }
 
-func (ss *SwarmScheduler) GetInstances(filter scheduler.FilterInstances) ([]*scheduler.ServiceInformation, error) {
+func (ss *SwarmScheduler) GetInstances(filter scheduler.FilterInstances) ([]scheduler.ServiceInformation, error) {
 	// TODO implementar el uso del filtro
 	containers, err := ss.client.ListContainers(docker.ListContainersOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	var instances []*scheduler.ServiceInformation
+	var instances []scheduler.ServiceInformation
 	for _, v := range containers {
-		instances = append(instances, &scheduler.ServiceInformation{
+		instances = append(instances, scheduler.ServiceInformation{
 			Id:     v.ID,
 			Status: v.Status,
+			Image:  v.Image,
 		})
 	}
 
