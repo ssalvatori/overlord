@@ -37,7 +37,7 @@ var configStruct = Configuration{
 			},
 		},
 		"sjc": Cluster{
-			Disbled: true,
+			Disabled: true,
 			Scheduler: Scheduler{
 				"marathon": Parameters{
 					"address":   "3.3.3.3:8081",
@@ -127,4 +127,44 @@ func (suite *ConfigSuite) TestParseSimple(c *check.C) {
 	err := yaml.Unmarshal([]byte(configYaml), &config)
 	c.Assert(err, check.IsNil)
 	c.Assert(config, check.DeepEquals, suite.expectedConfig)
+}
+
+
+func (suite *ConfigSuite) TestParameters(c *check.C) {
+	var params = Scheduler{
+		"marathon": Parameters {
+			"lala":"nono",
+		},
+	}
+	
+	c.Assert(params.Parameters(), check.DeepEquals, Parameters{"lala":"nono",})
+}
+
+func (suite *ConfigSuite) TestType(c *check.C) {
+	
+	var scheduler = Scheduler {
+		"swarm": Parameters {
+			"disable": "true",
+			"key": "sdfs.key",
+			"cert": "cert.ctr",
+		},
+	}
+	
+	var schedulerError = Scheduler {
+		"swarm": Parameters {
+			"disable": "true",
+			"key": "sdfs.key",
+			"cert": "cert.ctr",
+		},
+		"marathon": Parameters {
+			"disable": "true",
+			"key": "sdfs.key",
+			"cert": "cert.ctr",
+		},
+	}
+	
+	c.Assert(scheduler.Type(), check.Equals, "swarm")
+	c.Assert(schedulerError.Type(), check.Panics, "")
+	
+		
 }
